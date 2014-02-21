@@ -24,16 +24,17 @@ import javax.imageio.ImageIO;
  * Where M is a message bits   
  * 
  * In file we store the message length info first PIXELS_PER_LENGTH pixels
- * Then, we going for each EACH_PIXEL (4 by default) pixels and read/write message bits
+ * Then, we going for each pixel and randomly check pixel
+ * Pseudorandom sequence, initialized by key hashcode, determines, which pixels contains hidden info
+ * 
  */
 public class ImageEncoder {
-    public final static int EACH_PIXEL = 4;              // Store information in each N pixels
     public final static int MAX_MESSAGE_LENGTH = 1024;
 
     /**
-     * 
+     * Write ony byte, represented as short (we use only last byte of short to represet unsigned byte)
      * @param ARGB pixel value
-     * @param b short to write (0-255)
+     * @param b byte to write (0-255)
      * @return 
      */
     private static int writeByteToPixel(int ARGB, short b) {
@@ -43,10 +44,7 @@ public class ImageEncoder {
 
         // At R color component we store at last 3 bits by default: RRRRRRRR -> RRRRRMMM
         int rValue = (((ARGB >> 16) & 0xFF) >> 3) << 3;
-        //System.out.println("Bits: " + Integer.toBinaryString((b >> (8 - 3)) & 0xFF));
-        //System.out.println("B: " + Integer.toBinaryString(rValue));
         rValue |= (b >> (8 - 3)) & 0xFF;
-        //System.out.println("A: " + Integer.toBinaryString(rValue));
 
         // At G color component we store at last 3 bits by default: GGGGGGGG -> GGGGGMMM
         int gValue = (((ARGB >> 8) & 0xFF) >> 3) << 3;
@@ -67,7 +65,7 @@ public class ImageEncoder {
     }
     
     /**
-     * 
+     * Read unsigned byte from pixel
      * @param ARGB pixel
      * @return data short, extracted from pixel (0-255)
      */
@@ -85,15 +83,15 @@ public class ImageEncoder {
     }
     
     /**
-     * Write some custom data shorts (as short 0-255) into image and saves it into file
+     * Write some custom data shorts (as unsigned byte) into image and saves it into file
      *
      * Bytes sequence followed little endian
      * @param bimg opened source buffered image
      * @param msg shorts to store
-     * @param filename
+     * @param filename name of file to save image
+     * @param rng pseudorandom sequence, which determines pixels with hidden info
      */
     public static void writeBytesToImage(BufferedImage bimg, short[] msg, String filename, Random rng) throws ImageWriteException {
-
         int w = bimg.getWidth();
         int h = bimg.getHeight();
 
@@ -114,9 +112,11 @@ public class ImageEncoder {
                 bimg.setRGB(b, 0, pixel);
             }
 
-            for (int i = 1, msgPos = 0, row = 0, j = 0; row < h; row++) {
-                for (int col = 4; col < w && j < msg.length; col++, i++) {
-                    if (rng.nextBoolean()) {
+            // Start from 5th pixel and go over all pixels
+            // Read only pixels those compares with our pseudorandom sequence that depends by stegano key
+            for (int msgPos = 0, row = 0, j = 0; row < h; row++) {
+                for (int col = 4; col < w && j < msg.length; col++) {
+                    if (rng.nextBoolean()) {    // Check for pseudorandom sequence
                         int ARGB = bimg.getRGB(col, row);
                         ARGB = writeByteToPixel(ARGB, msg[msgPos]);
 
@@ -141,7 +141,7 @@ public class ImageEncoder {
      * Get message length info from PNG file
      * 
      * Reading first PIXELS_PER_LENGTH pixels
-     * Length shorts following LITTLE_ENDIAN order
+     * Length unsigned bytes is following LITTLE_ENDIAN order
      * @param bimg
      * @return 
      */
@@ -152,13 +152,19 @@ public class ImageEncoder {
             
             int lengthByte = readByteFromPixel(pixel);
             
-            // Compacting shorts into numeric value, starting from lower shorts
+            // Compacting unsigned bytes into numeric value, starting from lower shorts
             result = (result << 8) + lengthByte;
         }
         
         return result;
     }
     
+    /**
+     * Reads hidden info from image file
+     * @param bimg image with hidden info
+     * @param rng pseudorandom sequence that defines which pixels contains hidden info
+     * @return array of unsigned bytes with (probably) hidden info
+     */
     public static short[] readBytesFromImage(BufferedImage bimg, Random rng) {
         int w = bimg.getWidth(), h = bimg.getHeight();
 

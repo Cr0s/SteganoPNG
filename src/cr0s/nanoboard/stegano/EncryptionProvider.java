@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package cr0s.nanoboard.stegano;
 
 import java.security.InvalidAlgorithmParameterException;
@@ -22,7 +18,7 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * Cryptography utilities:
  *
- * Encrypt and Decrypt routines Hashsum generation
+ * Encrypt and Decrypt routines and Hashsum generation
  *
  * @author Cr0s
  */

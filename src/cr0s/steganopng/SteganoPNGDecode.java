@@ -3,7 +3,6 @@ package cr0s.steganopng;
 import cr0s.nanoboard.image.ImageEncoder;
 import cr0s.nanoboard.stegano.EncryptionProvider;
 import cr0s.nanoboard.util.ByteUtils;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -23,10 +22,6 @@ public class SteganoPNGDecode {
             System.out.println("[*] Reading input file...");
             File img = new File(System.getProperty("user.dir") + System.getProperty("file.separator") + inputFile);
             BufferedImage in = ImageIO.read(img);
-            //BufferedImage newImage = new BufferedImage(in.getWidth(), in.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            //Graphics2D g = newImage.createGraphics();
-            //g.drawImage(in, 0, 0, null);
-            //g.dispose();
             
             System.out.println("[*] Reading hidden bytes from .PNG...");
             
